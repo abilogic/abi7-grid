@@ -1,0 +1,542 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d3d13b7..793d00a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,27 @@
+ 
+ All notable changes to ABI7 Grid Community. The version numbers describe this repository only.
+ 
++## Unreleased — performance review
++
++Behaviour and public API are unchanged. See `docs/PERFORMANCE-REVIEW.md` for measurements.
++
++### Core
++- `DataStore.insert()` appends in place (no copy of the whole data set per call): 1000 single appends on 50k records 1100 ms → 12 ms.
++- `DataStore.remove()` compacts in place from the first removed index and no longer rebuilds the id → index Map.
++- `GeometryStore` tracks real rectangle changes and updates the bucket index incrementally (full rebuild only when the bucket structure changes).
++- `updateViewport()` no longer reads `scrollTop`/`scrollLeft` after mutating the DOM (forced synchronous layout on every frame that mounted a card).
++- `onScroll()` keeps one idle timer per gesture instead of `clearTimeout` + `setTimeout` on every scroll event.
++- `DOMRenderer.sync()` uses generation stamps instead of building a `Set` and copying the key list on every frame.
++- `prefers-reduced-motion` `MediaQueryList` is created once per window instead of once per layout pass.
++- Masonry/Grid allocate one `fixed` object per layout pass instead of one per item; pinned items are merged with a binary search; `visible()` can reuse a buffer; `emit()` returns early when nobody listens; drag reads `getBoundingClientRect()` once per pointer move.
++
++### Plugins
++- `selection`: `select()` / `deselect()` apply a one-id delta instead of cloning and diffing the whole selection.
++- `reveal`: one pair of animation frames per mount batch instead of per card.
++
++### Tooling
++- `tests/perf.test.js` (46 checks incl. randomised comparison against brute force), `bench/bench.mjs`, `bench/compare.mjs`.
++
+ ## 1.0.0 — Community Edition
+ 
+ First release of the public **ABI7 Grid Community** repository. The core was taken from the existing source (`abilogic/abi7-tmp`) without rewriting; changes to the core are limited to the header comments (license notice and authorship).
+diff --git a/plugins/reveal/reveal.js b/plugins/reveal/reveal.js
+index 1228d01..ec4993e 100644
+--- a/plugins/reveal/reveal.js
++++ b/plugins/reveal/reveal.js
+@@ -28,6 +28,21 @@ export default {
+     let batch = 0; // position of the card inside the current mount batch
+     let batchTimer = 0;
+     const frames = new Set();
++    // PERF: one pair of animation frames per mount BATCH instead of one pair (two closures, two rAF registrations)
++    // per card. A fast scroll can mount dozens of cards in a single frame.
++    let pending = []; // ids waiting for the "pre" class to be removed
++    let scheduled = false;
++    const release = () => {
++      scheduled = false;
++      const ids = pending; // cards mounted from now on belong to the next batch and get their own two frames
++      pending = [];
++      const f2 = requestAnimationFrame(() => {
++        frames.delete(f2);
++        if (disposed) return;
++        for (const id of ids) api.renderer.toggleClass(id, 'abi7-reveal-pre', false);
++      });
++      frames.add(f2);
++    };
+ 
+     // Settings are published as CSS custom properties so all visuals stay in reveal.css.
+     root.classList.add('abi7-reveal-enabled');
+@@ -43,15 +58,15 @@ export default {
+       // The class is registered by record id, so the core re-applies it if the node is re-bound before it is removed.
+       api.renderer.toggleClass(e.id, 'abi7-reveal-pre', true);
+       // Two frames: the hidden state must be painted once, otherwise the browser has nothing to transition from.
+-      const f1 = requestAnimationFrame(() => {
+-        const f2 = requestAnimationFrame(() => {
+-          frames.delete(f2);
+-          if (!disposed) api.renderer.toggleClass(e.id, 'abi7-reveal-pre', false);
++      pending.push(e.id);
++      if (!scheduled) {
++        scheduled = true;
++        const f1 = requestAnimationFrame(() => {
++          frames.delete(f1);
++          if (!disposed) release();
+         });
+-        frames.add(f2);
+-        frames.delete(f1);
+-      });
+-      frames.add(f1);
++        frames.add(f1);
++      }
+       if (!batchTimer) batchTimer = setTimeout(() => { batch = 0; batchTimer = 0; }, 60);
+     });
+ 
+diff --git a/plugins/selection/selection.js b/plugins/selection/selection.js
+index ef54079..09e14bc 100644
+--- a/plugins/selection/selection.js
++++ b/plugins/selection/selection.js
+@@ -47,17 +47,23 @@ export default {
+     const feature = {
+       select(id, source = 'api') {
+         if (!api.data.has(id)) return false;
+-        const next = options.multiple ? new Set(selected) : new Set();
+-        next.add(id);
+         anchorId = id;
+-        applyDiff(next, source);
++        if (options.multiple) {
++          // PERF: a delta of one id. Copying the whole selection and diffing it was O(selected) per click
++          // (painful after selectAll() on a big grid). The emitted event is identical.
++          if (!selected.has(id)) {
++            selected.add(id);
++            paint(id, true);
++            emitChange([id], [], source);
++          }
++        } else applyDiff(new Set([id]), source);
+         return true;
+       },
+       deselect(id, source = 'api') {
+         if (!selected.has(id)) return false;
+-        const next = new Set(selected);
+-        next.delete(id);
+-        applyDiff(next, source);
++        selected.delete(id); // PERF: delta of one id, see select()
++        paint(id, false);
++        emitChange([], [id], source);
+         return true;
+       },
+       toggle(id, source = 'api') {
+diff --git a/src/abi7-grid.js b/src/abi7-grid.js
+index bf005b6..45337c8 100644
+--- a/src/abi7-grid.js
++++ b/src/abi7-grid.js
+@@ -214,7 +214,9 @@ class EventEmitter {
+ 
+   emit(name, payload = {}) {
+     if (isObject(payload) && payload.type === undefined) payload.type = name;
+-    const groups = [this._map.get(name), name === '*' ? null : this._map.get('*')];
++    const own = this._map.get(name), star = name === '*' ? undefined : this._map.get('*');
++    if (!own && !star) return; // PERF: hot events (scroll, drag:move) usually have no listeners
++    const groups = [own, star || null];
+     for (const group of groups) {
+       if (!group) continue;
+       for (const rec of group.slice()) {
+@@ -403,29 +405,53 @@ class DataStore {
+       seen.add(id);
+       newIds.push(id);
+     }
+-    this.records = this.records.slice(0, at).concat(list, this.records.slice(at));
+-    this.ids = this.ids.slice(0, at).concat(newIds, this.ids.slice(at));
++    // PERF: mutate in place. Appending is O(added) instead of copying both arrays on every call.
++    if (at === this.records.length) {
++      for (let k = 0; k < list.length; k++) {
++        this.records.push(list[k]);
++        this.ids.push(newIds[k]);
++      }
++    } else if (list.length <= 10000) { // spread of a huge list would overflow the argument limit
++      this.records.splice(at, 0, ...list);
++      this.ids.splice(at, 0, ...newIds);
++    } else {
++      this.records = this.records.slice(0, at).concat(list, this.records.slice(at));
++      this.ids = this.ids.slice(0, at).concat(newIds, this.ids.slice(at));
++    }
+     this.reindex(at);
+     return newIds.map((id, k) => ({ id, index: at + k, record: list[k] }));
+   }
+ 
+   remove(idList) {
++    // PERF: find the first affected position through the id → index Map, then compact the arrays in place
++    // from there. Nothing before the first removed item is scanned, copied or re-indexed
++    // (the old code scanned everything and rebuilt the whole Map).
+     const kill = new Set(idList);
++    let first = Infinity;
++    for (const id of kill) {
++      const at = this.index.get(id);
++      if (at !== undefined && at < first) first = at;
++    }
+     const removed = [];
+-    const records = [];
+-    const ids = [];
+-    for (let i = 0; i < this.ids.length; i++) {
+-      if (kill.has(this.ids[i])) removed.push({ id: this.ids[i], index: i, record: this.records[i] });
+-      else {
+-        records.push(this.records[i]);
+-        ids.push(this.ids[i]);
++    if (first === Infinity) return removed;
++    const ids = this.ids, records = this.records, n = ids.length;
++    let w = first;
++    for (let i = first; i < n; i++) {
++      const id = ids[i];
++      if (kill.has(id)) {
++        removed.push({ id, index: i, record: records[i] });
++        this.index.delete(id);
++      } else {
++        if (w !== i) {
++          records[w] = records[i];
++          ids[w] = id;
++          this.index.set(id, w);
++        }
++        w++;
+       }
+     }
+-    if (!removed.length) return removed;
+-    this.records = records;
+-    this.ids = ids;
+-    this.index = new Map();
+-    this.reindex(0);
++    records.length = w;
++    ids.length = w;
+     return removed;
+   }
+ 
+@@ -468,6 +494,18 @@ const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+ 
+ const BUCKET = 512;
+ 
++/** Binary search in an ascending array of numbers. */
++function sortedHas(arr, v) {
++  let lo = 0, hi = arr.length - 1;
++  while (lo <= hi) {
++    const mid = (lo + hi) >>> 1, x = arr[mid];
++    if (x === v) return true;
++    if (x < v) lo = mid + 1;
++    else hi = mid - 1;
++  }
++  return false;
++}
++
+ class GeometryStore {
+   constructor() {
+     this.cap = 0;
+@@ -483,6 +521,11 @@ class GeometryStore {
+     this.contentH = 0;
+     this.epoch = 0;
+     this._tick = 0;
++    // PERF: incremental index. _dirty = lowest slot whose rectangle really changed since the last buildIndex().
++    this._dirty = Infinity;
++    this._idxCount = 0; // how many slots the current index covers
++    this._idxAxis = null;
++    this._idxOverflow = false; // some rectangle was clamped into the last bucket → membership depends on bucket count
+   }
+ 
+   setCount(n) {
+@@ -500,10 +543,15 @@ class GeometryStore {
+   }
+ 
+   set(i, x, y, w, h) {
+-    this.x[i] = x;
+-    this.y[i] = y;
+-    this.w[i] = w;
+-    this.h[i] = h;
++    // Layouts recompute a few items before `from` (checkpoints, justified rows) and many of them end up with the
++    // same rectangle. Writing only real changes lets buildIndex() keep the index entries of everything that did not move.
++    if (this.x[i] !== x || this.y[i] !== y || this.w[i] !== w || this.h[i] !== h) {
++      if (i < this._dirty) this._dirty = i;
++      this.x[i] = x;
++      this.y[i] = y;
++      this.w[i] = w;
++      this.h[i] = h;
++    }
+   }
+ 
+   rect(i, id) {
+@@ -511,19 +559,51 @@ class GeometryStore {
+     return { id, index: i, x, y, width: w, height: h, right: x + w, bottom: y + h };
+   }
+ 
++  /**
++   * (Re)builds the bucket index. Every bucket list holds slot numbers in ascending order, so when only the tail of
++   * the data changed (append, insert/remove near the end, partial layout) it is enough to cut the entries
++   * >= `from` off every list and add the changed slots again: O(buckets + changed) instead of O(all items).
++   * Falls back to a full rebuild whenever the bucket structure itself may have changed.
++   */
+   buildIndex(axis) {
+     this.axis = axis;
+     const main = axis === 'x' ? this.contentW : this.contentH;
+     const nb = Math.max(1, Math.floor(main / BUCKET) + 1);
+-    const buckets = new Array(nb);
+     const mp = axis === 'x' ? this.x : this.y;
+     const ms = axis === 'x' ? this.w : this.h;
+-    for (let i = 0; i < this.count; i++) {
++    const count = this.count;
++    const from = Math.min(this._dirty, this._idxCount, count);
++    const old = this.buckets;
++    let buckets, start;
++    if (from > 0 && axis === this._idxAxis && !this._idxOverflow && nb >= old.length && old.length > 0) {
++      buckets = old;
++      if (from < this._idxCount) {
++        for (let k = 0; k < old.length; k++) {
++          const list = buckets[k];
++          if (!list) continue;
++          let n = list.length;
++          while (n > 0 && list[n - 1] >= from) n--;
++          if (n !== list.length) list.length = n;
++        }
++      }
++      buckets.length = nb;
++      start = from;
++    } else {
++      buckets = new Array(nb);
++      start = 0;
++      this._idxOverflow = false;
++    }
++    for (let i = start; i < count; i++) {
+       const a = clamp(Math.floor(mp[i] / BUCKET), 0, nb - 1);
+-      const b = clamp(Math.floor((mp[i] + ms[i]) / BUCKET), 0, nb - 1);
++      const rawB = Math.floor((mp[i] + ms[i]) / BUCKET);
++      if (rawB > nb - 1) this._idxOverflow = true;
++      const b = clamp(rawB, 0, nb - 1);
+       for (let k = a; k <= b; k++) (buckets[k] || (buckets[k] = [])).push(i);
+     }
+     this.buckets = buckets;
++    this._idxCount = count;
++    this._idxAxis = axis;
++    this._dirty = Infinity;
+   }
+ 
+   /** Indexes of elements intersecting the window [m0,m1] along the main axis and [c0,c1] along the transverse axis. Sorted. */
+@@ -616,11 +696,12 @@ const MasonryLayout = {
+           heights = st.cp[k].slice();
+           st.cp.length = k + 1;
+         }
++        const fixed = { height: o.itemHeight, aspectRatio: o.aspectRatio }; // PERF: allocated once, not per item
+         for (let i = k * K; i < ctx.count; i++) {
+           if (i % K === 0 && i > k * K) st.cp[i / K] = heights.slice();
+           let c = 0;
+           for (let j = 1; j < cols; j++) if (heights[j] < heights[c]) c = j;
+-          const h = ctx.resolveHeight(i, w, { height: o.itemHeight, aspectRatio: o.aspectRatio });
++          const h = ctx.resolveHeight(i, w, fixed);
+           ctx.set(i, offX + c * (w + gx), heights[c], w, h);
+           heights[c] += h + gy;
+         }
+@@ -665,10 +746,11 @@ const GridLayout = {
+         st.rows.length = r0 + 1;
+         let top = st.rows[r0];
+         const rows = Math.ceil(ctx.count / cols);
++        const fixed = { height: o.itemHeight, aspectRatio: o.aspectRatio }; // PERF: allocated once, not per item
+         for (let r = r0; r < rows; r++) {
+           const s = r * cols, e = Math.min(ctx.count, s + cols);
+           let rowH = 1;
+-          for (let i = s; i < e; i++) rowH = Math.max(rowH, ctx.resolveHeight(i, w, { height: o.itemHeight, aspectRatio: o.aspectRatio }));
++          for (let i = s; i < e; i++) rowH = Math.max(rowH, ctx.resolveHeight(i, w, fixed));
+           for (let i = s; i < e; i++) ctx.set(i, offX + (i - s) * (w + gx), top, w, rowH);
+           top += rowH + gy;
+           st.rows[r + 1] = top;
+@@ -988,18 +1070,23 @@ class VirtualizationEngine {
+       geo.query(sMain - os.before, sMain + vMain + os.after, sCross - cross, sCross + vCross + cross, out);
+     }
+     if (this.pinned.size) {
++      // `out` is sorted here, so membership is a binary search (was Array#includes: O(n) per pinned item).
++      const extra = [];
+       for (const id of this.pinned.keys()) {
+         const i = inst.data.index.get(id);
+-        if (i !== undefined && !out.includes(i)) out.push(i);
++        if (i !== undefined && !sortedHas(out, i)) extra.push(i);
++      }
++      if (extra.length) {
++        for (let k = 0; k < extra.length; k++) out.push(extra[k]);
++        out.sort(byNumber);
+       }
+-      out.sort(byNumber);
+     }
+     return out;
+   }
+ 
+-  /** Indexes that actually cross the visibility window (without overscan). */
+-  visible(geo, sMain, vMain, sCross, vCross) {
+-    return geo.query(sMain, sMain + vMain, sCross, sCross + vCross, []);
++  /** Indexes that actually cross the visibility window (without overscan). `out` lets hot callers reuse a buffer. */
++  visible(geo, sMain, vMain, sCross, vCross, out = []) {
++    return geo.query(sMain, sMain + vMain, sCross, sCross + vCross, out);
+   }
+ }
+ 
+@@ -1019,6 +1106,7 @@ class DOMRenderer {
+     this.reused = 0;
+     this.itemClasses = new Map(); // id → Set<string> - classes assigned by plugins; are experiencing overuse
+     this.sizeObserver = null;
++    this._gen = 0; // generation counter used by sync()
+   }
+ 
+   get opts() {
+@@ -1070,7 +1158,7 @@ class DOMRenderer {
+       el.setAttribute('role', 'listitem');
+       this.created++;
+     }
+-    const ent = { id, index, el, epoch: -1 };
++    const ent = { id, index, el, epoch: -1, gen: 0 };
+     el._abi7 = ent;
+     this.mounted.set(id, ent);
+     this._bind(ent);
+@@ -1167,16 +1255,25 @@ class DOMRenderer {
+ 
+   /** Brings the DOM into alignment with a set of indexes. Returns true if something is mounted/unmounted. */
+   sync(indices) {
+-    const data = this.inst.data;
+-    const want = new Set();
+-    for (let k = 0; k < indices.length; k++) want.add(data.ids[indices[k]]);
+-    let changed = false;
+-    for (const id of [...this.mounted.keys()]) {
+-      if (!want.has(id)) {
+-        this._unmount(id);
+-        changed = true;
++    // PERF: runs on every scroll frame. Stamp the entries that stay (no Set / no copy of the key list) and only
++    // walk the mounted Map when it really holds something that must leave.
++    const data = this.inst.data, mounted = this.mounted;
++    const gen = ++this._gen;
++    let keep = 0;
++    for (let k = 0; k < indices.length; k++) {
++      const e = mounted.get(data.ids[indices[k]]);
++      if (e && e.gen !== gen) {
++        e.gen = gen;
++        keep++;
+       }
+     }
++    let changed = false;
++    if (keep !== mounted.size) {
++      const stale = [];
++      for (const e of mounted.values()) if (e.gen !== gen) stale.push(e.id);
++      for (let k = 0; k < stale.length; k++) this._unmount(stale[k]);
++      changed = stale.length > 0;
++    }
+     const frag = this.inst.root.ownerDocument.createDocumentFragment();
+     for (let k = 0; k < indices.length; k++) {
+       const i = indices[k], id = data.ids[i];
+@@ -1271,7 +1368,15 @@ class AnimationManager {
+     if (!a.enabled || a.duration <= 0) return false;
+     if (a.respectReducedMotion) {
+       const win = this.inst.root.ownerDocument.defaultView;
+-      if (win && win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
++      if (win && win.matchMedia) {
++        // PERF: a MediaQueryList is live, so one object per window is enough (was: a new one per layout pass).
++        if (this._mqlWin !== win || this._mqlFn !== win.matchMedia) {
++          this._mqlWin = win;
++          this._mqlFn = win.matchMedia;
++          this._mql = win.matchMedia('(prefers-reduced-motion: reduce)');
++        }
++        if (this._mql && this._mql.matches) return false;
++      }
+     }
+     return true;
+   }
+@@ -1694,14 +1799,14 @@ class InteractionManager {
+     d.ghost.style.transform = `translate3d(${d.x - d.offX}px,${d.y - d.offY}px,0)`;
+   }
+ 
+-  _update() {
++  _update(rect) {
+     const inst = this.inst, d = this.drag, a = inst.options.animation;
+     this._position();
+-    const r = inst.root.getBoundingClientRect();
++    const r = rect || inst.root.getBoundingClientRect();
+     d.outside = !(d.x >= r.left && d.x <= r.right && d.y >= r.top && d.y <= r.bottom);
+     let overIndex = -1;
+     if (!d.outside) {
+-      overIndex = inst.indexAtClientPoint(d.x, d.y);
++      overIndex = inst.indexAtClientPoint(d.x, d.y, undefined, r); // PERF: reuse the rect that was just measured
+       const cooldown = inst.anim.enabled ? Math.min(a.duration * 0.6, 200) : 0;
+       if (overIndex >= 0 && overIndex !== d.index && now() - d.lastMoveAt >= cooldown) {
+         if (inst.move(d.id, overIndex, 'drag')) {
+@@ -1730,7 +1835,7 @@ class InteractionManager {
+           if (horizontal) inst.root.scrollLeft += v * cfg.maxSpeed;
+           else inst.root.scrollTop += v * cfg.maxSpeed;
+           inst.requestView();
+-          this._update();
++          this._update(r);
+         }
+       }
+     }
+@@ -1827,6 +1932,7 @@ class LifecycleManager {
+    The ABI7Grid public class is a thin façade above it.
+    ============================================================ */
+ 
++const IDLE_MS = 140; // silence after the last scroll event before 'scroll:stop'
+ const OWNERS = new WeakMap(); // element → GridInstance (reinitialization protection)
+ const ANIMATED_REASONS = new Set(['insert', 'remove', 'move', 'resize', 'layout', 'refresh', 'update']);
+ const NO_ANCHOR_REASONS = new Set(['data', 'rebuild', 'reload']);
+@@ -1870,6 +1976,8 @@ class GridInstance {
+     this._inError = false;
+     this._destroying = false;
+     this._idleTimer = 0;
++    this._lastScrollAt = 0;
++    this._visBuf = [];
+     this._userClasses = [];
+     this.pendingAnchor = null;
+     this.anchorTaken = false;
+@@ -2213,12 +2321,21 @@ class GridInstance {
+   onScroll() {
+     this.viewDirty = true;
+     this.schedule();
+-    this.life.clearTimeout(this._idleTimer);
++    // PERF: scroll fires up to once per frame (more on high-refresh screens). Instead of cancelling and re-creating a
++    // timer every time, remember when the last scroll happened and keep ONE timer that re-arms itself for the rest.
++    this._lastScrollAt = now();
++    if (!this._idleTimer) this._armIdle(IDLE_MS);
++  }
++
++  _armIdle(ms) {
+     this._idleTimer = this.life.timeout(() => {
++      this._idleTimer = 0;
++      const rest = IDLE_MS - (now() - this._lastScrollAt);
++      if (rest > 2) return this._armIdle(rest); // scrolled again in the meantime
+       this.virt.idle();
+       this.events.emit('scroll:stop', { scrollTop: this.root.scrollTop, scrollLeft: this.root.scrollLeft });
+       this.requestView();
+-    }, 140);
++    }, ms);
+   }
+ 
+   onResize() {
+@@ -2354,11 +2471,14 @@ class GridInstance {
+     const want = this.virt.select(this.geo, m.sMain, m.vMain, m.sCross, m.vCross);
+     const changed = this.renderer.sync(want);
+     this._updateVisibility(m);
+-    const top = this.root.scrollTop, left = this.root.scrollLeft;
++    // PERF: the scroll position was already read in viewMetrics() BEFORE sync() touched the DOM. Reading
++    // root.scrollTop here again forced a synchronous layout on every frame that mounted or moved a card.
++    const horiz = this.layoutMgr.axis === 'x';
++    const top = horiz ? m.sCross : m.sMain, left = horiz ? m.sMain : m.sCross;
+     if (top !== this.lastTop || left !== this.lastLeft) {
+       this.lastTop = top;
+       this.lastLeft = left;
+-      this.events.emit('scroll', { scrollTop: top, scrollLeft: left, direction: this.virt.direction > 0 ? 'forward' : 'backward', velocity: this.virt.velocity });
++      if (this.events.has('scroll')) this.events.emit('scroll', { scrollTop: top, scrollLeft: left, direction: this.virt.direction > 0 ? 'forward' : 'backward', velocity: this.virt.velocity });
+     }
+     if (changed || force) {
+       const r = this.renderer;
+@@ -2377,7 +2497,8 @@ class GridInstance {
+       return;
+     }
+     const cur = new Set();
+-    for (const i of this.virt.visible(this.geo, m.sMain, m.vMain, m.sCross, m.vCross)) cur.add(this.data.ids[i]);
++    // The buffer is consumed completely before any event is emitted, so reusing it cannot be re-entered.
++    for (const i of this.virt.visible(this.geo, m.sMain, m.vMain, m.sCross, m.vCross, this._visBuf)) cur.add(this.data.ids[i]);
+     for (const id of cur) {
+       if (!this.visIds.has(id)) {
+         const i = this.data.index.get(id), ent = this.renderer.mounted.get(id);
+@@ -2463,14 +2584,13 @@ class GridInstance {
+     return { scrollLeft: this.root.scrollLeft, scrollTop: this.root.scrollTop, width: this.vp.width, height: this.vp.height, axis: this.layoutMgr.axis, overscan: { ...this.virt.lastOverscan } };
+   }
+ 
+-  clientToContent(cx, cy) {
+-    const r = this.root.getBoundingClientRect();
++  clientToContent(cx, cy, r = this.root.getBoundingClientRect()) {
+     return { x: cx - r.left - this.root.clientLeft + this.root.scrollLeft, y: cy - r.top - this.root.clientTop + this.root.scrollTop };
+   }
+ 
+-  indexAtClientPoint(cx, cy, opts = {}) {
++  indexAtClientPoint(cx, cy, opts = {}, rect) {
+     this.ensureLayout();
+-    const p = this.clientToContent(cx, cy);
++    const p = this.clientToContent(cx, cy, rect);
+     const hit = this.geo.hitTest(p.x, p.y);
+     if (hit >= 0 || !opts.nearest) return hit;
+     const m = this.viewMetrics();

@@ -1,18 +1,18 @@
 {
-  "name": "abi7-grid",
-  "version": "1.0.0",
+  "name": "react-vite-tailwind",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node tools/build.js && vite build",
-    "preview": "vite preview",
-    "build:lib": "node tools/build.js --no-site",
-    "build:site": "node tools/build.js && vite build",
-    "check": "node tools/check.js",
-    "check:min": "node tools/check.js min",
-    "test": "node --test tests/",
-    "validate": "npm run build:lib && npm run check && npm test",
-    "pack:dry": "npm pack --dry-run"
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "clsx": "2.1.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tailwind-merge": "3.4.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
@@ -20,72 +20,9 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
-    "clsx": "^2.1.1",
-    "esbuild": "^0.28.2",
-    "jsdom": "^29.1.1",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "tailwind-merge": "^3.7.0",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "vite": "7.3.2",
     "vite-plugin-singlefile": "2.3.0"
-  },
-  "description": "ABI7 Grid Community — dependency-free JavaScript library for masonry, grid and justified layouts with virtualization and plugins. Free for non-commercial use only.",
-  "author": "Alexander Momot",
-  "homepage": "https://github.com/abilogic/abi7-grid#readme",
-  "license": "SEE LICENSE IN licenses/LICENSE-COMMUNITY.md",
-  "main": "dist/abi7-grid.js",
-  "module": "dist/abi7-grid.js",
-  "browser": "dist/abi7-grid.min.js",
-  "style": "dist/abi7-grid.css",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/abilogic/abi7-grid.git"
-  },
-  "bugs": {
-    "url": "https://github.com/abilogic/abi7-grid/issues"
-  },
-  "keywords": [
-    "grid",
-    "masonry",
-    "justified",
-    "gallery",
-    "virtualization",
-    "layout",
-    "plugins",
-    "vanilla-js",
-    "abi7",
-    "non-commercial"
-  ],
-  "sideEffects": false,
-  "files": [
-    "dist/abi7-grid.js",
-    "dist/abi7-grid.min.js",
-    "dist/abi7-grid.min.js.map",
-    "dist/abi7-grid.css",
-    "dist/abi7-grid.min.css",
-    "plugins/*/*.js",
-    "plugins/*/*.css",
-    "plugins/*/README.md",
-    "licenses",
-    "LICENSE",
-    "README.md",
-    "CHANGELOG.md"
-  ],
-  "exports": {
-    ".": {
-      "import": "./dist/abi7-grid.js",
-      "default": "./dist/abi7-grid.js"
-    },
-    "./min": "./dist/abi7-grid.min.js",
-    "./css": "./dist/abi7-grid.css",
-    "./css/min": "./dist/abi7-grid.min.css",
-    "./plugins/*": "./plugins/*",
-    "./package.json": "./package.json"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "licenseNotice": "This package is NOT open source. ABI7 Grid Community is free for non-commercial use only under the ABI7 Grid Community License (licenses/LICENSE-COMMUNITY.md). Commercial use requires a paid license: https://abi7.com"
+  }
 }
