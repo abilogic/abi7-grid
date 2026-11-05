@@ -1,0 +1,154 @@
+/*!
+ * ABI7 Grid v1.0.0 — core styles
+ * (c) 2023-2026 Alexander Momot. All rights reserved.
+ * ABI7 Grid Community Edition: free for NON-COMMERCIAL use only. Commercial use requires a paid license.
+ * Licensed under the ABI7 Grid Community License (licenses/LICENSE-COMMUNITY.md). Purchase: https://abi7.com
+ * All selectors start with .abi7-*: no global resets or conflicts.
+ * Setting via CSS custom properties on the root element (see below).
+ */
+
+/* ---- Root element (aka scroll container) ---- */
+.abi7-grid {
+  /* Public theming variables: */
+  --abi7-duration: 300ms;          /* set by the animation.duration option */
+  --abi7-easing: ease;             /* set by the animation.easing option */
+  --abi7-item-bg: #e5e7eb;         /* card background */
+  --abi7-item-radius: 6px;         /* card rounding */
+  --abi7-caption-color: #fff;
+  --abi7-focus: #4c8bf5;
+  --abi7-drag-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: var(--abi7-height, 100%);   /* height option → --abi7-height */
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  overflow-anchor: none;              /* Scroll Anchoring is done by the core, not the browser */
+  scrollbar-gutter: stable;           /* scrollbar does not change content width → no resize cycles */
+  -webkit-overflow-scrolling: touch;
+  outline: none;
+}
+
+.abi7-grid:focus-visible {
+  outline: 2px solid var(--abi7-focus);
+  outline-offset: -2px;
+}
+
+.abi7-grid.abi7-axis-y { overflow-x: auto; overflow-y: auto; }
+.abi7-grid.abi7-axis-x { overflow-x: auto; overflow-y: hidden; scrollbar-gutter: auto; }
+
+/* ---- Content container: dimensions are set by the core (layout geometry) ---- */
+.abi7-container {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 1px;
+  width: 100%;
+}
+
+.abi7-axis-x > .abi7-container {
+  width: auto;
+  height: 100%;
+}
+
+/* ---- element ---- */
+.abi7-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--abi7-item-bg);
+  border-radius: var(--abi7-item-radius);
+  contain: layout paint;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Virtualization.measure mode: the height is determined by the content, the core only measures it. */
+.abi7-item.abi7-item-auto {
+  height: auto;
+  overflow: visible;
+  contain: layout;
+}
+
+/* ---- Standard card content ---- */
+.abi7-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.abi7-media[hidden],
+.abi7-caption[hidden] { display: none; }
+
+.abi7-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18px 10px 8px;
+  overflow: hidden;
+  color: var(--abi7-caption-color);
+  font: 500 12px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.62));
+  pointer-events: none;
+}
+
+.abi7-media[hidden] + .abi7-caption {
+  position: static;
+  height: 100%;
+  padding: 10px;
+  color: inherit;
+  background: none;
+  white-space: normal;
+}
+
+/* ---- Animation of lane changes (the class is set by the core only for the duration of the lane change) ---- */
+.abi7-animating > .abi7-container > .abi7-item {
+  transition:
+    transform var(--abi7-duration) var(--abi7-easing),
+    width var(--abi7-duration) var(--abi7-easing),
+    height var(--abi7-duration) var(--abi7-easing);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abi7-animating > .abi7-container > .abi7-item { transition: none; }
+}
+
+/* ---- Drag & Drop ---- */
+.abi7-draggable .abi7-item { cursor: grab; }
+.abi7-drag-active,
+.abi7-drag-active .abi7-item { cursor: grabbing; }
+
+.abi7-item.abi7-dragging { opacity: 0.35; }
+
+/* The “ghost” lives in document.body, so the container’s overflow is not cut off. */
+.abi7-ghost-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+}
+
+.abi7-ghost-layer .abi7-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.92;
+  box-shadow: var(--abi7-drag-shadow);
+  transition: none;
+  pointer-events: none;
+}

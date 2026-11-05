@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Commercial license, licensing questions, permission requests
+    url: https://abi7.com
+    about: Licensing questions are handled via abi7.com, not through GitHub issues.

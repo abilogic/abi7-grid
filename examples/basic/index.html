@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Basic</title>
+  <!-- Basic core styles: one file, all classes start with .abi7- -->
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <!-- Design of a demo page (not part of the library) -->
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!--
+    Grid container. It is a scroll container, so it must have a height:
+    here it is defined by the .demo-grid (height: 380px) class in page.css.
+    The container must be empty - the kernel will add its own content layer inside.
+  -->
+  <div id="gallery" class="demo-grid"></div>
+  <p class="hint" id="out">Click on the card.</p>
+
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

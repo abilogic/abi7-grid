@@ -1,0 +1,15 @@
+/*!
+ * @abi7/hover-effects styles. (c) 2023-2026 Alexander Momot. ABI7 Grid Community License - https://abi7.com
+ * Effects use the card's children, never the card's own `transform` (the core positions cards with it).
+ */
+.abi7-item > .abi7-media { transition: transform 0.25s ease, filter 0.25s ease; }
+.abi7-item { transition: opacity 0.2s ease; }
+
+.abi7-hover-zoom .abi7-item.abi7-hover > .abi7-media { transform: scale(1.07); }
+.abi7-hover-lift .abi7-item.abi7-hover { box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35); z-index: 2; }
+.abi7-hover-lift .abi7-item.abi7-hover > .abi7-media { filter: brightness(1.08); }
+.abi7-hover-dim-others.abi7-hover-active .abi7-item:not(.abi7-hover) { opacity: 0.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .abi7-item, .abi7-item > .abi7-media { transition: none; }
+}

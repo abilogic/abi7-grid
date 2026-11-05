@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Multiple plugins and configuration</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../../plugins/selection/selection.css">
+  <link rel="stylesheet" href="../../plugins/hover-effects/hover-effects.css">
+  <link rel="stylesheet" href="../../plugins/reveal/reveal.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- Plugins are independent: each keeps its own state and cleans up after itself. -->
+  <div class="toolbar">
+    <button id="info">List installed plugins</button>
+    <button id="clear">Clear selection</button>
+  </div>
+  <div id="gallery" class="demo-grid tall"></div>
+  <div class="log" id="log">Click cards to select them (Ctrl/Cmd+click for several).</div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

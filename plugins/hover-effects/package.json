@@ -1,0 +1,20 @@
+{
+  "name": "@abi7/hover-effects",
+  "version": "1.0.0",
+  "description": "Hover effects plugin for ABI7 Grid",
+  "type": "module",
+  "main": "hover-effects.js",
+  "style": "hover-effects.css",
+  "files": [
+    "hover-effects.js",
+    "hover-effects.css",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "abi7-grid": "^1.0.0"
+  },
+  "license": "SEE LICENSE IN ../../licenses/LICENSE-COMMUNITY.md",
+  "private": true,
+  "author": "Alexander Momot",
+  "homepage": "https://github.com/abilogic/abi7-grid#readme"
+}

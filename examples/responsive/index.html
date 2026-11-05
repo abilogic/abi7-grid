@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Responsive grid</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- Columns are derived from minWidth and the available width. No media queries are needed. -->
+  <div class="toolbar">
+    <button id="phone">Phone (360)</button>
+    <button id="tablet">Tablet (768)</button>
+    <button id="desktop">Desktop (1100)</button>
+    <label>maxColumns <input id="max" type="range" min="1" max="8" value="6"><output id="maxOut">6</output></label>
+  </div>
+  <div id="wrap" style="max-width:100%;width:100%"><div id="gallery" class="demo-grid tall"></div></div>
+  <div class="stats" id="stats">…</div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

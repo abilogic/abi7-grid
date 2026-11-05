@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Multiple grid instances</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- Every instance has its own options, data, events and plugins. -->
+  <div class="toolbar">
+    <button id="both">Add item to both grids</button>
+    <button id="swap">Switch right grid to grid layout</button>
+  </div>
+  <div class="row">
+    <div class="col"><h4>left: masonry</h4><div id="left" class="demo-grid"></div></div>
+    <div class="col"><h4>right: justified</h4><div id="right" class="demo-grid"></div></div>
+  </div>
+  <div class="log" id="log"></div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

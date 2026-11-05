@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Two, three and four columns</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- The container is empty and has a height (see .demo-grid in page.css). The toolbar calls public methods. -->
+  <div class="toolbar">
+    <button id="c2">2 columns</button>
+    <button id="c3">3 columns</button>
+    <button id="c4">4 columns</button>
+    <label>layout
+      <select id="layout"><option value="masonry">masonry</option><option value="grid">grid</option></select>
+    </label>
+  </div>
+  <div id="gallery" class="demo-grid tall"></div>
+  <div class="stats" id="stats">…</div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

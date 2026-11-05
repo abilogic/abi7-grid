@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Image loading and asynchronous data</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- Geometry comes from width/height in the data, so the layout never waits for images. -->
+  <div class="toolbar">
+    <button id="reload">Reload (new async request)</button>
+    <button id="reloadFast">Reload twice quickly</button>
+  </div>
+  <div id="gallery" class="demo-grid tall"></div>
+  <div class="stats" id="stats">…</div>
+  <div class="log" id="log"></div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Connected Grids plugin</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../../plugins/connected-grids/connected-grids.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <p class="hint" style="margin:0 0 8px">Drag a card from one grid to another (mouse or long press on your phone). Within the grid, dragging changes the order.</p>
+  <div class="row">
+    <div class="col"><h4>Left — <span id="leftCount"></span></h4><div id="left" class="demo-grid"></div></div>
+    <div class="col"><h4>Right — <span id="rightCount"></span></h4><div id="right" class="demo-grid"></div></div>
+  </div>
+  <div class="toolbar" style="margin-top:10px"><button id="move">Programmatically: first from left → right</button></div>
+  <div class="log" id="log">Migration events will appear here.</div>
+
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

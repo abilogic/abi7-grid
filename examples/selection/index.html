@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Selection plugin</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <!-- Plugin styles are connected separately and only if the plugin is used -->
+  <link rel="stylesheet" href="../../plugins/selection/selection.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <div class="toolbar">
+    <button id="all">Select all</button>
+    <button id="clear">Deselect</button>
+    <button id="list">Show selected</button>
+    <span class="hint" style="margin:0">Click - select Ctrl/Cmd+click - add/remove Shift+click - range Ctrl/Cmd+A Esc</span>
+  </div>
+
+  <div id="gallery" class="demo-grid"></div>
+  <pre class="out" id="out">Nothing is highlighted.</pre>
+
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

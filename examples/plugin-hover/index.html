@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Hover Effects plugin</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../../plugins/hover-effects/hover-effects.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- Plugin CSS is a separate file: it is linked next to the core stylesheet. -->
+  <div class="toolbar">
+    <label>effect
+      <select id="effect"><option>zoom</option><option>lift</option><option>dim-others</option><option>none</option></select>
+    </label>
+    <button id="off">unuse() the plugin</button>
+    <button id="on">use() it again</button>
+  </div>
+  <div id="gallery" class="demo-grid tall"></div>
+  <div class="stats" id="stats">Move the pointer over the cards.</div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

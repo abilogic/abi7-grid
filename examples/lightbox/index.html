@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Lightbox plugin</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../../plugins/lightbox/lightbox.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <div class="toolbar">
+    <button id="open5">Open photo No. 5</button>
+    <label><input id="loop" type="checkbox" checked> loop</label>
+    <span class="hint" style="margin:0">Click on photo · ← → · Home/End · Esc · click on background · swipe on phone</span>
+  </div>
+
+  <div id="gallery" class="demo-grid"></div>
+  <div class="log" id="log">Lightbox events will appear here.</div>
+
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

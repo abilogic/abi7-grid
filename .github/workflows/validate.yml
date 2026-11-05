@@ -1,0 +1,40 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      # JavaScript syntax of every library, plugin, example, docs and tool file
+      - name: Syntax check
+        run: find src plugins examples docs tools tests -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      # Rebuild the minified files and fail if the committed ones differ (reproducible minification)
+      - name: Minified files are up to date
+        run: npm run check:min
+
+      # Structure, versions, license notices, absence of stray permissive-license files, links, CSS syntax
+      - name: Repository checks
+        run: npm run check
+
+      # Unit tests and every example, on src and on the minified build
+      - name: Tests
+        run: npm test
+
+      # The documentation site must build
+      - name: Build documentation site
+        run: |
+          npm run build
+          test -f dist/index.html
+          test -f dist/examples/basic/index.html

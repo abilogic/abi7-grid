@@ -1,0 +1,16 @@
+/*!
+ * @abi7/reveal styles. (c) 2023-2026 Alexander Momot. ABI7 Grid Community License - https://abi7.com
+ * Only the card's children are animated: the card itself is positioned by the core with `transform`.
+ */
+.abi7-reveal-enabled .abi7-item > * {
+  transition:
+    opacity var(--abi7-reveal-duration, 450ms) ease var(--abi7-reveal-delay, 0ms),
+    transform var(--abi7-reveal-duration, 450ms) ease var(--abi7-reveal-delay, 0ms);
+}
+.abi7-reveal-enabled .abi7-item.abi7-reveal-pre > * {
+  opacity: 0;
+  transform: translateY(var(--abi7-reveal-distance, 18px)) scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .abi7-reveal-enabled .abi7-item > *, .abi7-reveal-enabled .abi7-item.abi7-reveal-pre > * { transition: none; transform: none; opacity: 1; }
+}

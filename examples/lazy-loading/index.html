@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Lazy loading and infinite scroll</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- Cards are mounted lazily by virtualization; reach:end loads the next page. -->
+  <div id="gallery" class="demo-grid tall"></div>
+  <div class="stats" id="stats">Scroll down: the next page is requested when you get close to the end.</div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

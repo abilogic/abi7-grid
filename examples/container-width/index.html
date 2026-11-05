@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Custom container width</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- The grid adapts to the size of its container, not to the window. -->
+  <div class="toolbar">
+    <label>container width <input id="width" type="range" min="30" max="100" value="100"><output id="widthOut">100%</output></label>
+    <button id="px320">320 px</button>
+    <button id="px600">600 px</button>
+  </div>
+  <!-- The wrapper controls the width. The grid element itself only needs a height. -->
+  <div id="wrap" style="width:100%"><div id="gallery" class="demo-grid tall"></div></div>
+  <div class="stats" id="stats">…</div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

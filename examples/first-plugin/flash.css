@@ -1,0 +1,3 @@
+/* Styles of the Flash plugin: only properties the core does not manage (never the card's own transform). */
+.abi7-item.flash-on { outline: 4px solid #f5a524; outline-offset: -4px; filter: brightness(1.15); }
+.abi7-item { transition: filter 0.3s ease; }

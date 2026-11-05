@@ -1,0 +1,18 @@
+{
+  "name": "@abi7/transitions",
+  "version": "1.0.0",
+  "description": "Transition presets plugin for ABI7 Grid",
+  "type": "module",
+  "main": "transitions.js",
+  "files": [
+    "transitions.js",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "abi7-grid": "^1.0.0"
+  },
+  "license": "SEE LICENSE IN ../../licenses/LICENSE-COMMUNITY.md",
+  "private": true,
+  "author": "Alexander Momot",
+  "homepage": "https://github.com/abilogic/abi7-grid#readme"
+}

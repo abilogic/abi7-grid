@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABI7 Grid — Dynamic add, remove and update</title>
+  <link rel="stylesheet" href="../../dist/abi7-grid.css">
+  <link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+  <!-- insert / remove / update / move change the data; the layout recalculates only from the changed position. -->
+  <div class="toolbar">
+    <button id="addStart">Add at start</button>
+    <button id="addEnd">Add at end</button>
+    <button id="removeFirst">Remove first</button>
+    <button id="removeLast">Remove last</button>
+    <button id="update">Update first (title + height)</button>
+    <button id="move">Move first to end</button>
+  </div>
+  <div id="gallery" class="demo-grid tall"></div>
+  <div class="log" id="log"></div>
+  <script type="module" src="../shared/theme.js"></script>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

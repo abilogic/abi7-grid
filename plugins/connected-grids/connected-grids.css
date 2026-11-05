@@ -1,0 +1,9 @@
+/*!
+ * @abi7/connected-grids styles. (c) 2023-2026 Alexander Momot. ABI7 Grid Community License (free for non-commercial use only) - https://abi7.com
+ */
+/* @abi7/connected-grids - highlight the target grid when dragging */
+.abi7-connected-over {
+  outline: 2px dashed var(--abi7-connected-color, #4c8bf5);
+  outline-offset: -3px;
+  background-color: rgba(76, 139, 245, 0.07);
+}

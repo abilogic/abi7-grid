@@ -1,0 +1,20 @@
+{
+  "name": "@abi7/reveal",
+  "version": "1.0.0",
+  "description": "Reveal animation plugin for ABI7 Grid",
+  "type": "module",
+  "main": "reveal.js",
+  "style": "reveal.css",
+  "files": [
+    "reveal.js",
+    "reveal.css",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "abi7-grid": "^1.0.0"
+  },
+  "license": "SEE LICENSE IN ../../licenses/LICENSE-COMMUNITY.md",
+  "private": true,
+  "author": "Alexander Momot",
+  "homepage": "https://github.com/abilogic/abi7-grid#readme"
+}
